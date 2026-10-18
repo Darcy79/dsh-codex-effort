@@ -1,15 +1,16 @@
 const tiers = [
-  { name: 'Minimal', native: 'Minimal' },
+  { name: 'Off', native: 'Off' },
   { name: 'Low', native: 'Low' },
-  { name: 'Medium', native: 'Medium' },
   { name: 'High', native: 'High' },
-  { name: 'Ultra', native: 'Max' },
+  { name: 'Max', native: 'Max' },
 ]
 
 const DEFAULT_INDEX = 2
+const DEFAULT_MODEL = 'DeepSeek-V4.1-Flash'
 const THUMB_SIZE = 26
+const THUMB_TOP = 2
 const params = new URLSearchParams(location.search)
-const initialTier = Math.max(0, Math.min(tiers.length - 1, Number(params.get('tier') ?? '3') || 0))
+const initialTier = Math.max(0, Math.min(tiers.length - 1, Number(params.get('tier') ?? '2') || 0))
 const initialTheme = params.get('theme')
 
 const popWrap = document.querySelector('#popWrap')
@@ -17,11 +18,11 @@ const popup = document.querySelector('#popup')
 const trigger = document.querySelector('#triggerPill')
 const slider = document.querySelector('#slider')
 const range = document.querySelector('#effortRange')
+const fillClip = document.querySelector('#fillClip')
 const fill = document.querySelector('#fill')
 const thumb = document.querySelector('#thumb')
 const thumbRing = document.querySelector('#thumbRing')
 const tierTitle = document.querySelector('#tierTitle')
-const titleStack = document.querySelector('.dce-title-stack')
 const nativeEffort = document.querySelector('#nativeEffort')
 const nativeName = document.querySelector('#nativeName')
 const modelName = document.querySelector('#modelName')
@@ -38,9 +39,11 @@ const micBtn = document.querySelector('#micBtn')
 const voiceBtn = document.querySelector('#voiceBtn')
 const starField = document.querySelector('#starField')
 const tickField = document.querySelector('#tickField')
-const aurora = document.querySelector('#aurora')
 const pillMotes = document.querySelector('#pillMotes')
 const pillAura = document.querySelector('#pillAura')
+const pillModel = document.querySelector('#pillModel')
+const pillLevel = document.querySelector('#pillLevel')
+const thumbMotes = document.querySelector('#thumbMotes')
 
 const PILL_AURA = [
   { x: -3, y: 22, size: 3.2, delay: 0, duration: 6.2, color: '#a9c3ff' },
@@ -48,6 +51,14 @@ const PILL_AURA = [
   { x: 18, y: -6, size: 2.4, delay: 2.1, duration: 6.8, color: '#ffffff' },
   { x: 72, y: 104, size: 3, delay: 0.8, duration: 5.9, color: '#b6d2ff' },
   { x: 95, y: 8, size: 2.3, delay: 2.7, duration: 6.4, color: '#c4a7ff' },
+]
+
+const THUMB_MOTES = [
+  { x: -17, y: -13, size: 3, delay: 0, duration: 5.2 },
+  { x: 16, y: -15, size: 2.6, delay: 1.1, duration: 5.8 },
+  { x: 19, y: 10, size: 3.4, delay: 2.2, duration: 4.8 },
+  { x: -15, y: 15, size: 2.4, delay: 0.7, duration: 5.5 },
+  { x: 2, y: -19, size: 2.8, delay: 1.7, duration: 6.1 },
 ]
 
 const PILL_MOTES = [
@@ -70,13 +81,14 @@ const BURST_PARTICLES = Array.from({ length: 16 }, (_, particleIndex) => {
     dy: Math.sin(angle) * distance,
     size: 2.4 + (particleIndex % 3) * 1.2,
     delay: (particleIndex % 5) * 24,
-    color: particleIndex % 3 === 0 ? '#ffffff' : particleIndex % 2 === 0 ? '#d8b4fe' : '#a78bfa',
+    color: particleIndex % 3 === 0 ? '#ffffff' : particleIndex % 2 === 0 ? '#ffd0e4' : '#e84a92',
   }
 })
 
 let index = initialTier
 let trackWidth = 0
 let wasMax = false
+let revealTimer = null
 let burstTimer = null
 let burstElement = null
 const dots = []
@@ -89,6 +101,10 @@ function makeRandom(seed) {
   }
 }
 
+function simplifyModel(value) {
+  return value.replace(/^deepseek[-\s_]*/i, '').replace(/[-\s_]+/g, '').slice(0, 16)
+}
+
 for (const mote of PILL_AURA) {
   const particle = document.createElement('span')
   particle.className = 'dce-pill-aura-dot'
@@ -99,6 +115,17 @@ for (const mote of PILL_AURA) {
   particle.style.animationDelay = `${mote.delay}s`
   particle.style.animationDuration = `${mote.duration}s`
   pillAura.append(particle)
+}
+
+for (const mote of THUMB_MOTES) {
+  const particle = document.createElement('span')
+  particle.className = 'dce-thumb-mote'
+  particle.style.setProperty('--dce-thumb-x', `${mote.x}px`)
+  particle.style.setProperty('--dce-thumb-y', `${mote.y}px`)
+  particle.style.setProperty('--dce-thumb-size', `${mote.size}px`)
+  particle.style.animationDelay = `${mote.delay}s`
+  particle.style.animationDuration = `${mote.duration}s`
+  thumbMotes.append(particle)
 }
 
 for (const mote of PILL_MOTES) {
@@ -145,7 +172,7 @@ function triggerBurst() {
   const element = document.createElement('span')
   element.className = 'dce-burst'
   element.style.left = `${thumbCenter()}px`
-  element.style.top = `${THUMB_SIZE / 2}px`
+  element.style.top = `${THUMB_TOP + THUMB_SIZE / 2}px`
   const ring = document.createElement('span')
   ring.className = 'dce-burst-ring'
   element.append(ring)
@@ -173,28 +200,36 @@ function scheduleBurst() {
   burstTimer = setTimeout(() => {
     burstTimer = null
     triggerBurst()
-  }, 240)
+  }, 440)
 }
 
 function layout() {
   const travel = Math.max(0, trackWidth - THUMB_SIZE)
   const progress = tiers.length > 1 ? index / (tiers.length - 1) : 0
   const left = Math.round(progress * travel)
-  const fillWidth = trackWidth > 0 ? Math.round(left + THUMB_SIZE / 2) : 0
+  const fillWidth = index === 0 || trackWidth === 0 ? 0 : Math.round(left + THUMB_SIZE / 2)
   const max = index === tiers.length - 1
+  const tier = tiers[index].name.toLowerCase()
 
-  fill.style.width = `${fillWidth}px`
+  fillClip.style.width = `${fillWidth}px`
+  fillClip.style.setProperty('--dce-fill-width', `${fillWidth}px`)
+  fill.style.width = `${trackWidth}px`
   thumb.style.left = `${left}px`
+  thumb.style.setProperty('--dce-thumb-left', `${left}px`)
+
   dots.forEach((dot, dotIndex) => {
     const stop = dotIndex + 1
     dot.style.left = `${THUMB_SIZE / 2 + (stop / (tiers.length - 1)) * travel}px`
     dot.classList.toggle('is-filled', stop <= index)
   })
+
+  slider.dataset.tier = tier
   slider.dataset.max = String(max)
+  slider.dataset.revealing = slider.dataset.revealing ?? 'false'
+  thumb.dataset.tier = tier
   thumb.dataset.max = String(max)
+  popup.dataset.tier = tier
   popup.dataset.max = String(max)
-  aurora.hidden = !max
-  starField.hidden = !max
 }
 
 function measure() {
@@ -211,37 +246,48 @@ function animateRing() {
   ], { duration: 480, easing: 'cubic-bezier(.22, 1, .36, 1)' })
 }
 
-function transitionTitle(previousName, previousMax) {
-  if (previousName === tierTitle.textContent && previousMax === (tierTitle.dataset.max === 'true')) return
-  const outgoing = document.createElement('span')
-  outgoing.className = 'dce-title dce-title-out'
-  outgoing.textContent = previousName
-  outgoing.dataset.max = String(previousMax)
-  outgoing.setAttribute('aria-hidden', 'true')
-  for (const old of titleStack.querySelectorAll('.dce-title-out')) old.remove()
-  titleStack.append(outgoing)
-  setTimeout(() => outgoing.remove(), 200)
-  tierTitle.classList.remove('dce-title-in')
-  void tierTitle.offsetWidth
-  tierTitle.classList.add('dce-title-in')
+function cancelReveal() {
+  if (revealTimer !== null) {
+    clearTimeout(revealTimer)
+    revealTimer = null
+  }
+  slider.dataset.revealing = 'false'
+}
+
+function reveal() {
+  cancelReveal()
+  void slider.offsetWidth
+  slider.dataset.revealing = 'true'
+  revealTimer = setTimeout(() => {
+    revealTimer = null
+    slider.dataset.revealing = 'false'
+  }, 520)
 }
 
 function render(nextIndex, animate = true) {
   const previousName = tierTitle.textContent
-  const previousMax = tierTitle.dataset.max === 'true'
+  const previousTier = tierTitle.dataset.tier
   index = Math.max(0, Math.min(tiers.length - 1, nextIndex))
   const tier = tiers[index]
+  const tierKey = tier.name.toLowerCase()
   const max = index === tiers.length - 1
+
   tierTitle.textContent = tier.name
-  tierTitle.dataset.max = String(max)
+  tierTitle.dataset.tier = tierKey
   nativeEffort.textContent = tier.native
   range.value = String(index)
   range.setAttribute('aria-valuetext', tier.name)
+  pillLevel.textContent = tier.name
+  pillLevel.dataset.tier = tierKey
   layout()
-  if (animate) {
-    transitionTitle(previousName, previousMax)
+
+  if (animate && (previousName !== tier.name || previousTier !== tierKey)) {
+    tierTitle.classList.remove('dce-title-in')
+    void tierTitle.offsetWidth
+    tierTitle.classList.add('dce-title-in')
     animateRing()
   }
+
   if (max && !wasMax) scheduleBurst()
   if (!max && burstTimer !== null) {
     clearTimeout(burstTimer)
@@ -255,6 +301,7 @@ function openPopup() {
   trigger.setAttribute('aria-expanded', 'true')
   requestAnimationFrame(() => {
     measure()
+    reveal()
     if (index === tiers.length - 1) scheduleBurst()
   })
 }
@@ -262,6 +309,7 @@ function openPopup() {
 function closePopup() {
   popWrap.classList.remove('is-open')
   trigger.setAttribute('aria-expanded', 'false')
+  cancelReveal()
 }
 
 function showEffortPane() {
@@ -287,11 +335,12 @@ trigger.addEventListener('pointermove', (event) => {
 })
 
 range.addEventListener('input', () => {
-  render(Number(range.value), false)
-  animateRing()
+  cancelReveal()
+  render(Number(range.value), true)
 })
 
 range.addEventListener('pointerdown', () => {
+  cancelReveal()
   slider.dataset.dragging = 'true'
   thumb.dataset.dragging = 'true'
 })
@@ -340,6 +389,7 @@ for (const row of document.querySelectorAll('.dce-model-row')) {
     const selectedModel = row.dataset.model
     modelName.textContent = selectedModel
     nativeName.textContent = selectedModel
+    pillModel.textContent = simplifyModel(selectedModel)
     for (const candidate of document.querySelectorAll('.dce-model-row')) {
       const selected = candidate === row
       candidate.dataset.selected = String(selected)
@@ -407,6 +457,8 @@ voiceBtn.addEventListener('click', (event) => {
   voiceBtn.setAttribute('aria-pressed', String(voiceBtn.classList.contains('is-listening')))
 })
 
+pillModel.textContent = simplifyModel(DEFAULT_MODEL)
+
 if (typeof ResizeObserver !== 'undefined') {
   const observer = new ResizeObserver(measure)
   observer.observe(slider)
@@ -415,5 +467,7 @@ if (typeof ResizeObserver !== 'undefined') {
 render(initialTier, false)
 requestAnimationFrame(() => {
   measure()
+  reveal()
   animateRing()
+  if (initialTier === tiers.length - 1) scheduleBurst()
 })

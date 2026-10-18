@@ -82,11 +82,11 @@
               <div class="demo-anchor">
                 <div class="demo-pop-wrap is-open" id="popWrap">
                   <div class="demo-pop">
-                    <div class="dce-pop" id="popup" role="dialog" aria-label="Reasoning effort" data-open="true" data-max="false">
+                    <div class="dce-pop" id="popup" role="dialog" aria-label="Reasoning effort" data-open="true" data-tier="high" data-max="false">
                       <div class="dce-head demo-head-effort">
                         <span class="dce-head-spacer" aria-hidden="true"></span>
                         <span class="dce-title-stack">
-                          <span class="dce-title" id="tierTitle" data-max="false">High</span>
+                          <span class="dce-title" id="tierTitle" data-tier="high">High</span>
                         </span>
                         <button class="dce-icon-btn" id="resetBtn" type="button" aria-label="Reset to default effort" title="Reset to default effort">
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -98,20 +98,24 @@
 
                       <div class="demo-pane-effort" id="effortPane">
                         <button class="dce-model" id="modelBtn" type="button" title="Change model">
-                          <span class="dce-model-name" id="modelName">GPT-6.1 Sol</span>
+                          <span class="dce-model-name" id="modelName">DeepSeek-V4.1-Flash</span>
                           <svg class="dce-model-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="m9.2 6.5 5.4 5.5-5.4 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                           </svg>
                         </button>
 
-                        <div class="dce-slider" id="slider" data-max="false" data-disabled="false" data-dragging="false">
+                        <div class="dce-slider" id="slider" data-tier="high" data-max="false" data-disabled="false" data-dragging="false" data-revealing="false">
                           <span class="dce-track-base" aria-hidden="true"></span>
-                          <span class="dce-fill" id="fill" aria-hidden="true"></span>
-                          <span class="dce-aurora" id="aurora" aria-hidden="true" hidden></span>
-                          <span class="dce-stars" id="starField" aria-hidden="true" hidden></span>
+                          <span class="dce-fill-clip" id="fillClip" aria-hidden="true">
+                            <span class="dce-fill" id="fill"></span>
+                            <span class="dce-aurora" id="aurora"></span>
+                            <span class="dce-stars" id="starField"></span>
+                          </span>
                           <span class="dce-ticks" id="tickField" aria-hidden="true"></span>
-                          <input class="dce-range" id="effortRange" type="range" min="0" max="4" step="1" value="3" aria-label="Reasoning effort" aria-valuetext="High">
-                          <span class="dce-thumb" id="thumb" data-max="false" data-dragging="false" aria-hidden="true">
+                          <input class="dce-range" id="effortRange" type="range" min="0" max="3" step="1" value="2" aria-label="Reasoning effort" aria-valuetext="High">
+                          <span class="dce-thumb" id="thumb" data-tier="high" data-max="false" data-dragging="false" aria-hidden="true">
+                            <span class="dce-thumb-bloom"></span>
+                            <span class="dce-thumb-motes" id="thumbMotes"></span>
                             <span class="dce-thumb-ring" id="thumbRing"></span>
                           </span>
                         </div>
@@ -120,24 +124,24 @@
                       <div class="demo-pane-model" id="modelPane" hidden>
                         <div class="dce-model-list" role="listbox" aria-label="Choose model">
                           <div class="dce-model-group">
-                            <div class="dce-group-name">OpenAI</div>
-                            <button class="dce-model-row" data-model="GPT-6.1 Sol" data-selected="true" type="button" role="option" aria-selected="true">
+                            <div class="dce-group-name">DeepSeek</div>
+                            <button class="dce-model-row" data-model="DeepSeek-V4.1-Flash" data-selected="true" type="button" role="option" aria-selected="true">
                               <span class="dce-model-mark" aria-hidden="true">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3.2 13.8 8l4.9 1.8-4.9 1.8L12 16.4l-1.8-4.8-4.9-1.8 4.9-1.8L12 3.2Z" fill="currentColor"/></svg>
                               </span>
                               <span class="dce-model-copy">
-                                <span class="dce-model-label">GPT-6.1 Sol</span>
-                                <span class="dce-model-meta">5 effort levels</span>
+                                <span class="dce-model-label">DeepSeek-V4.1-Flash</span>
+                                <span class="dce-model-meta">4 effort levels</span>
                               </span>
                               <svg class="dce-check" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4.8 12.2 4.3 4.2L19.4 5.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             </button>
-                            <button class="dce-model-row" data-model="GPT-6.1 Luna" data-selected="false" type="button" role="option" aria-selected="false">
+                            <button class="dce-model-row" data-model="DeepSeek-V4-Pro" data-selected="false" type="button" role="option" aria-selected="false">
                               <span class="dce-model-mark" aria-hidden="true">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3.2 13.8 8l4.9 1.8-4.9 1.8L12 16.4l-1.8-4.8-4.9-1.8 4.9-1.8L12 3.2Z" fill="currentColor"/></svg>
                               </span>
                               <span class="dce-model-copy">
-                                <span class="dce-model-label">GPT-6.1 Luna</span>
-                                <span class="dce-model-meta">5 effort levels</span>
+                                <span class="dce-model-label">DeepSeek-V4-Pro</span>
+                                <span class="dce-model-meta">4 effort levels</span>
                               </span>
                               <svg class="dce-check" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="visibility:hidden"><path d="m4.8 12.2 4.3 4.2L19.4 5.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             </button>
@@ -160,13 +164,18 @@
 
                 <div class="dce-root">
                   <button class="dce-pill" id="triggerPill" type="button" aria-haspopup="dialog" aria-expanded="true">
+                    <span class="dce-pill-bloom" aria-hidden="true"></span>
                     <span class="dce-pill-surface" aria-hidden="true">
                       <span class="dce-pill-sweep"></span>
                       <span class="dce-pill-light"></span>
                       <span class="dce-pill-motes" id="pillMotes"></span>
                     </span>
                     <span class="dce-pill-aura" id="pillAura" aria-hidden="true"></span>
-                    <span class="dce-pill-label">选择推理强度</span>
+                    <span class="dce-pill-label">
+                      <span class="dce-pill-model" id="pillModel">V4.1Flash</span>
+                      <span class="dce-pill-sep" aria-hidden="true">·</span>
+                      <span class="dce-pill-level" id="pillLevel" data-tier="high">High</span>
+                    </span>
                     <svg class="dce-pill-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="m6.5 9.2 5.5 5.4 5.5-5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -187,7 +196,7 @@
               </button>
 
               <div class="demo-native">
-                <span class="demo-native-name" id="nativeName">GPT-6.1 Sol</span>
+                <span class="demo-native-name" id="nativeName">DeepSeek-V4.1-Flash</span>
                 <span class="demo-native-badge">1017</span>
                 <span class="demo-native-effort" id="nativeEffort">High</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">

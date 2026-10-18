@@ -15,6 +15,7 @@ const PLUGIN_ID = 'dsh-codex-effort'
 const NS = 'dsh.codex.effort'
 const STYLE_ID = 'dsh-codex-effort/styles'
 const THUMB_SIZE = 26
+const THUMB_TOP = 0
 
 const EMPTY_SNAPSHOT = {
   current: null,
@@ -65,6 +66,15 @@ const PILL_MOTES = [
   { x: 95, y: 30, size: 2.6, delay: 2.4, duration: 5.1, color: '#ffffff' },
 ]
 
+/** Light-sense motes that orbit the draggable knob. */
+const THUMB_MOTES = [
+  { x: -17, y: -13, size: 3, delay: 0, duration: 5.2 },
+  { x: 16, y: -15, size: 2.6, delay: 1.1, duration: 5.8 },
+  { x: 19, y: 10, size: 3.4, delay: 2.2, duration: 4.8 },
+  { x: -15, y: 15, size: 2.4, delay: 0.7, duration: 5.5 },
+  { x: 2, y: -19, size: 2.8, delay: 1.7, duration: 6.1 },
+]
+
 /** One-shot particles when the thumb lands on the final stop. */
 const BURST_PARTICLES = Array.from({ length: 16 }, (_, index) => {
   const angle = (index / 16) * Math.PI * 2 - Math.PI / 2
@@ -74,7 +84,7 @@ const BURST_PARTICLES = Array.from({ length: 16 }, (_, index) => {
     dy: Math.sin(angle) * distance,
     size: 2.4 + (index % 3) * 1.2,
     delay: (index % 5) * 24,
-    color: index % 3 === 0 ? '#ffffff' : index % 2 === 0 ? '#d8b4fe' : '#a78bfa',
+    color: index % 3 === 0 ? '#ffffff' : index % 2 === 0 ? '#ffd0e4' : '#e84a92',
   }
 })
 
@@ -312,6 +322,7 @@ function EffortControl(props) {
   const closeTimerRef = React.useRef(null)
   const revealTimerRef = React.useRef(null)
   const revealPendingRef = React.useRef(false)
+  const revealTokenRef = React.useRef(0)
   const previewRef = React.useRef(0)
   const mountedRef = React.useRef(true)
 
@@ -362,7 +373,6 @@ function EffortControl(props) {
   const thumbTravel = Math.max(0, trackWidth - THUMB_SIZE)
   const thumbLeft = Math.round(progress * thumbTravel)
   const fillWidth = hasEnergy && trackWidth > 0 ? Math.round(thumbLeft + THUMB_SIZE / 2) : 0
-  const fillInset = trackWidth > 0 ? Math.max(0, Math.round(trackWidth - fillWidth)) : 0
 
   React.useEffect(() => {
     previewRef.current = selectedIndex
@@ -432,6 +442,24 @@ function EffortControl(props) {
     return () => { observer.disconnect() }
   }, [visible, mode])
 
+  React.useLayoutEffect(() => {
+    if (!open || !revealPendingRef.current || trackWidth === 0) return
+    revealPendingRef.current = false
+    const token = revealTokenRef.current + 1
+    revealTokenRef.current = token
+    setRevealing(false)
+    const frame = requestAnimationFrame(() => {
+      if (!mountedRef.current || token !== revealTokenRef.current) return
+      setRevealing(true)
+      if (revealTimerRef.current !== null) clearTimeout(revealTimerRef.current)
+      revealTimerRef.current = setTimeout(() => {
+        revealTimerRef.current = null
+        if (mountedRef.current) setRevealing(false)
+      }, 520)
+    })
+    return () => { cancelAnimationFrame(frame) }
+  }, [open, trackWidth])
+
   React.useEffect(() => {
     if (!open) return
     const closeOutside = (event) => {
@@ -485,11 +513,24 @@ function EffortControl(props) {
     return () => { clearTimeout(timer) }
   }, [maxBurst])
 
+  const cancelReveal = () => {
+    revealPendingRef.current = false
+    revealTokenRef.current += 1
+    if (revealTimerRef.current !== null) {
+      clearTimeout(revealTimerRef.current)
+      revealTimerRef.current = null
+    }
+    setRevealing(false)
+  }
+
   const openPanel = () => {
     if (closeTimerRef.current !== null) {
       clearTimeout(closeTimerRef.current)
       closeTimerRef.current = null
     }
+    revealPendingRef.current = true
+    previewRef.current = selectedIndex
+    setPreviewIndex(selectedIndex)
     setError(null)
     setMode('effort')
     setVisible(true)
@@ -501,6 +542,7 @@ function EffortControl(props) {
 
   const closePanel = (focusTrigger) => {
     if (!visible) return
+    cancelReveal()
     setOpen(false)
     setDragging(false)
     if (focusTrigger) triggerRef.current?.focus()
@@ -557,6 +599,7 @@ function EffortControl(props) {
   }
 
   const changePreview = (event) => {
+    cancelReveal()
     const index = Number(event.target.value)
     setPreviewIndex(index)
     previewRef.current = index
@@ -628,6 +671,18 @@ function EffortControl(props) {
     },
   }))
 
+  const thumbMotes = THUMB_MOTES.map((mote, index) => React.createElement('span', {
+    key: `thumb-mote-${index}`,
+    className: 'dce-thumb-mote',
+    style: {
+      '--dce-thumb-x': `${mote.x}px`,
+      '--dce-thumb-y': `${mote.y}px`,
+      '--dce-thumb-size': `${mote.size}px`,
+      animationDelay: `${mote.delay}s`,
+      animationDuration: `${mote.duration}s`,
+    },
+  }))
+
   const burst = BURST_PARTICLES.map((particle, index) => React.createElement('span', {
     key: `burst-${index}`,
     className: 'dce-burst-dot',
@@ -680,20 +735,30 @@ function EffortControl(props) {
       {
         ref: trackRef,
         className: 'dce-slider',
+        'data-tier': tier,
         'data-max': isMax ? 'true' : 'false',
+        'data-revealing': revealing ? 'true' : 'false',
         'data-disabled': interactive ? 'false' : 'true',
         'data-dragging': dragging ? 'true' : 'false',
       },
       React.createElement('span', { className: 'dce-track-base', 'aria-hidden': 'true' }),
-      React.createElement('span', {
-        className: 'dce-fill',
-        'aria-hidden': 'true',
-        style: { width: `${fillWidth}px` },
-      }),
-      isMax ? React.createElement('span', { className: 'dce-aurora', 'aria-hidden': 'true' }) : null,
-      isMax
-        ? React.createElement('span', { className: 'dce-stars', 'aria-hidden': 'true' }, stars)
-        : null,
+      React.createElement(
+        'span',
+        {
+          className: 'dce-fill-clip',
+          'aria-hidden': 'true',
+          style: {
+            width: `${fillWidth}px`,
+            '--dce-fill-width': `${fillWidth}px`,
+          },
+        },
+        React.createElement('span', {
+          className: 'dce-fill',
+          style: { width: `${trackWidth}px` },
+        }),
+        hasEnergy ? React.createElement('span', { className: 'dce-aurora' }) : null,
+        hasEnergy ? React.createElement('span', { className: 'dce-stars' }, stars) : null,
+      ),
       React.createElement('span', { className: 'dce-ticks', 'aria-hidden': 'true' }, ticks),
       React.createElement('input', {
         ref: sliderRef,
@@ -707,7 +772,7 @@ function EffortControl(props) {
         'aria-label': t('sliderAria'),
         'aria-valuetext': levelName,
         onChange: changePreview,
-        onPointerDown: () => { setDragging(true) },
+        onPointerDown: () => { cancelReveal(); setDragging(true) },
         onPointerUp: () => { setDragging(false); flushPreview() },
         onPointerCancel: () => { setDragging(false); flushPreview() },
         onKeyUp: (event) => {
@@ -721,13 +786,19 @@ function EffortControl(props) {
         'span',
         {
           className: 'dce-thumb',
+          'data-tier': tier,
           'data-max': isMax ? 'true' : 'false',
           'data-dragging': dragging ? 'true' : 'false',
           'aria-hidden': 'true',
-          style: { left: `${thumbLeft}px` },
+          style: {
+            left: `${thumbLeft}px`,
+            '--dce-thumb-left': `${thumbLeft}px`,
+          },
         },
+        React.createElement('span', { className: 'dce-thumb-bloom', 'aria-hidden': 'true' }),
+        React.createElement('span', { className: 'dce-thumb-motes', 'aria-hidden': 'true' }, thumbMotes),
         React.createElement('span', {
-          key: `ring-${safePreviewIndex}-${isMax ? 'max' : 'blue'}`,
+          key: `ring-${safePreviewIndex}-${tier}`,
           className: 'dce-thumb-ring',
         }),
       ),
@@ -738,7 +809,7 @@ function EffortControl(props) {
             key: `burst-${maxBurst}`,
             className: 'dce-burst',
             'aria-hidden': 'true',
-            style: { left: `${thumbLeft + THUMB_SIZE / 2}px`, top: `${THUMB_SIZE / 2}px` },
+            style: { left: `${thumbLeft + THUMB_SIZE / 2}px`, top: `${THUMB_TOP + THUMB_SIZE / 2}px` },
           },
           React.createElement('span', { className: 'dce-burst-ring' }),
           burst,
@@ -842,22 +913,12 @@ function EffortControl(props) {
       React.createElement(
         'span',
         { className: 'dce-title-stack' },
-        titleOutgoing === null ? null : React.createElement(
-          'span',
-          {
-            key: `title-out-${titleSeq}`,
-            className: 'dce-title dce-title-out',
-            'data-max': titleOutgoing.isMax ? 'true' : 'false',
-            'aria-hidden': 'true',
-          },
-          titleOutgoing.name,
-        ),
         React.createElement(
           'span',
           {
-            key: `title-in-${titleSeq}`,
+            key: `title-${tier}-${levelName}`,
             className: 'dce-title dce-title-in',
-            'data-max': isMax ? 'true' : 'false',
+            'data-tier': tier,
             'data-empty': current === null ? 'true' : 'false',
           },
           levelName,
@@ -916,6 +977,7 @@ function EffortControl(props) {
           'aria-modal': 'false',
           'aria-label': t('dialogAria'),
           'data-open': open ? 'true' : 'false',
+          'data-tier': tier,
           'data-max': isMax ? 'true' : 'false',
           style: position === null
             ? { left: -9999, top: -9999, visibility: 'hidden' }
@@ -942,8 +1004,14 @@ function EffortControl(props) {
         onPointerMove: movePillLight,
         'aria-haspopup': 'dialog',
         'aria-expanded': open,
-        title: t('trigger'),
+        'aria-label': current === null
+          ? t('trigger')
+          : `${t('trigger')}: ${modelName ?? t('auto')}, ${currentLevelName}`,
+        title: current === null
+          ? t('trigger')
+          : `${modelName ?? t('auto')} · ${currentLevelName}`,
       },
+      React.createElement('span', { className: 'dce-pill-bloom', 'aria-hidden': 'true' }),
       React.createElement(
         'span',
         { className: 'dce-pill-surface', 'aria-hidden': 'true' },
@@ -952,7 +1020,19 @@ function EffortControl(props) {
         React.createElement('span', { className: 'dce-pill-motes' }, pillMotes),
       ),
       React.createElement('span', { className: 'dce-pill-aura', 'aria-hidden': 'true' }, pillAura),
-      React.createElement('span', { className: 'dce-pill-label' }, t('trigger')),
+      React.createElement(
+        'span',
+        { className: 'dce-pill-label' },
+        current === null
+          ? t('trigger')
+          : React.createElement(
+            React.Fragment,
+            null,
+            React.createElement('span', { className: 'dce-pill-model' }, shortModel ?? t('auto')),
+            React.createElement('span', { className: 'dce-pill-sep', 'aria-hidden': 'true' }, '·'),
+            React.createElement('span', { className: 'dce-pill-level', 'data-tier': currentTier }, currentLevelName),
+          ),
+      ),
       React.createElement(ChevronDownIcon, { className: 'dce-pill-chevron' }),
       pillPulse > 0
         ? React.createElement('span', {

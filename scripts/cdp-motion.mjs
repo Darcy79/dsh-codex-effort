@@ -125,22 +125,28 @@ try {
   await send('Page.navigate', { url })
   await sleep(3200)
 
-  // Medium (blue) → High (blue) → Ultra + Fast (purple) → Low (blue) → Medium.
+  // High → Low → High → Max → Off → Low → High; then reopen to show the
+  // fill-from-left reveal.
   await burst(8)
-  await evaluate(setTierScript(3))
+  await evaluate(setTierScript(1))
   await burst(14)
-  await evaluate(setTierScript(4))
-  await burst(18)
+  await evaluate(setTierScript(2))
+  await burst(14)
+  await evaluate(setTierScript(3))
+  await burst(22)
+  await evaluate(setTierScript(0))
+  await burst(14)
   await evaluate(setTierScript(1))
   await burst(14)
   await evaluate(setTierScript(2))
   await burst(12)
 
-  // Close and reopen the popover so the final GIF also demonstrates motion.
+  // Close and reopen the popover so the final GIF also demonstrates the
+  // left-to-current fill reveal.
   await evaluate("document.querySelector('#triggerPill').click()")
   await burst(6)
   await evaluate("document.querySelector('#triggerPill').click()")
-  await burst(8)
+  await burst(12)
 
   await writeFile(join(framesDir, 'meta.json'), JSON.stringify({ frames: frameIndex }, null, 2))
   console.log(`captured ${frameIndex} frames in ${framesDir}`)
