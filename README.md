@@ -74,6 +74,12 @@ Low / High / Max 都有扫光、星尘和亮度呼吸，Max 额外有到顶粒�
 
 ## 安装
 
+### 从 Release 下载（不需要 git）
+
+1. 打开仓库的 **Releases** 页，下载最新的 `dsh-codex-effort-vX.Y.Z.zip`；
+2. 解压到任意固定目录，解压后的根目录里应能看到 `package.json`、`lib/`、`cordis.patch.yml`；
+3. 按下面的「桌面版」步骤，把「包名或地址」填成这个解压目录的绝对路径。
+
 ### 桌面版（推荐）
 
 桌面版的 `desktop` profile 由 DeepSeek Harness 自己托管，CLI 不允许直接写入。用应用内的插件面板安装：
@@ -82,7 +88,7 @@ Low / High / Max 都有扫光、星尘和亮度呼吸，Max 额外有到顶粒�
 2. 右上角点 **添加插件**；
 3. 在「包名或地址」里粘贴本目录的绝对路径：
    ```text
-   D:\DeepSeek Harness插件\仿codex速度条
+   <解压后的绝对路径>
    ```
 4. 点 **安装**；
 5. 安装完成后如果出现「已安装」弹窗，点 **立即启用**；否则在「已安装插件」里打开它的开关，启用组件。
@@ -102,7 +108,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Profi
 手动等价命令：
 
 ```powershell
-dsh plugin --profile web add "D:\DeepSeek Harness插件\仿codex速度条"
+dsh plugin --profile web add "<解压后的绝对路径>"
 ```
 
 > 插件以本地链接方式安装，后续重新构建 `lib/client.js` 后重启 Harness 即可生效。桌面版更新时若提示「已安装」，先卸载再重新安装。
