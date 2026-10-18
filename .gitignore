@@ -1,0 +1,10 @@
+﻿# deps
+node_modules/
+
+# build/scratch screenshots at repo root
+/light-button*.png
+
+# logs & OS junk
+*.log
+.DS_Store
+Thumbs.db

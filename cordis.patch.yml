@@ -1,0 +1,6 @@
+# Host-side presence only: the value of this plugin lives in its browser half.
+# `dsh plugin add` mounts this insert through package.json#dsh.bundle.patch.
+- insert:
+    - id: dsh-codex-effort
+      name: dsh-codex-effort
+      config: {}
