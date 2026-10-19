@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-effort",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "A Codex-inspired reasoning-effort slider with HarmonyOS-style light motion for the DeepSeek Harness composer.",
   "type": "module",

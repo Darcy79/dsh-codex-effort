@@ -7,15 +7,17 @@
  * envelope the DSH shell expects, and inlines the stylesheet so the bundle
  * stays a single self-contained file.
  */
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
+const normalizeEol = (text) => text.replace(/\r\n?/g, '\n')
 const pkg = JSON.parse(await readFile(join(ROOT, 'package.json'), 'utf8'))
 const id = pkg.name
-const body = await readFile(join(ROOT, 'src', 'client', 'index.js'), 'utf8')
-const css = await readFile(join(ROOT, 'src', 'client', 'styles.css'), 'utf8')
+const body = normalizeEol(await readFile(join(ROOT, 'src', 'client', 'index.js'), 'utf8'))
+const css = normalizeEol(await readFile(join(ROOT, 'src', 'client', 'styles.css'), 'utf8'))
+const host = normalizeEol(await readFile(join(ROOT, 'src', 'index.js'), 'utf8'))
 
 const banner = [
   'window.__ModuleLoader__.load({',
@@ -39,5 +41,5 @@ const bundle = banner + styles + body + footer
 
 await mkdir(join(ROOT, 'lib'), { recursive: true })
 await writeFile(join(ROOT, 'lib', 'client.js'), bundle, 'utf8')
-await copyFile(join(ROOT, 'src', 'index.js'), join(ROOT, 'lib', 'index.js'))
+await writeFile(join(ROOT, 'lib', 'index.js'), host, 'utf8')
 console.log(`built ${id}: lib/index.js + lib/client.js (${Buffer.byteLength(bundle)} bytes)`)

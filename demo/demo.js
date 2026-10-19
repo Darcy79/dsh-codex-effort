@@ -207,7 +207,9 @@ function layout() {
   const travel = Math.max(0, trackWidth - THUMB_SIZE)
   const progress = tiers.length > 1 ? index / (tiers.length - 1) : 0
   const left = Math.round(progress * travel)
-  const fillWidth = index === 0 || trackWidth === 0 ? 0 : Math.round(left + THUMB_SIZE / 2)
+  const fillWidth = index === 0 || trackWidth === 0
+    ? 0
+    : Math.min(trackWidth, Math.round(left + THUMB_SIZE))
   const max = index === tiers.length - 1
   const tier = tiers[index].name.toLowerCase()
 

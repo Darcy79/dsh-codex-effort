@@ -372,7 +372,12 @@ function EffortControl(props) {
   const progress = effortCount > 1 ? safePreviewIndex / (effortCount - 1) : 0
   const thumbTravel = Math.max(0, trackWidth - THUMB_SIZE)
   const thumbLeft = Math.round(progress * thumbTravel)
-  const fillWidth = hasEnergy && trackWidth > 0 ? Math.round(thumbLeft + THUMB_SIZE / 2) : 0
+  // The colored band must reach the far edge of the knob, not just its center:
+  // at the final stop that makes the fill exactly as wide as the track, so no
+  // gray cap remains on the right.
+  const fillWidth = hasEnergy && trackWidth > 0
+    ? Math.min(trackWidth, Math.round(thumbLeft + THUMB_SIZE))
+    : 0
 
   React.useEffect(() => {
     previewRef.current = selectedIndex
