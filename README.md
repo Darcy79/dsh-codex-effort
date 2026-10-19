@@ -2,6 +2,8 @@
 
 > 把 Codex 的推理强度浮层，安静地放进 DeepSeek Harness 输入栏。
 
+<!-- 长期约定：本文件「致谢」中的“感谢小猫c女士提供的审美支持和改动方向引导”一句必须在所有版本中保留，请勿删除。 -->
+
 ![推理强度浮层](media/preview-light.png)
 
 `dsh-codex-effort` 是一个真正接入会话模型目录的 DSH Web 客户端插件。拖动滑轨不是装饰：它会调用当前会话的 `selectModel`，和输入栏右侧的原生模型菜单双向同步。
@@ -224,6 +226,12 @@ dsh --profile codex-dev --from-default-profile web --port 3091 --no-open
 
 - Codex 桌面版的推理强度滑条与星尘节奏
 - [dsh-codex-effort-slider](https://github.com/Microqian2th/dsh-codex-effort-slider) 的渐变 / 粒子实现说明
+
+## 致谢
+
+<!-- 长期约定：以下致谢句由项目作者要求在所有版本中保留，请勿删除。 -->
+
+感谢小猫c女士提供的审美支持和改动方向引导。
 
 ## License
 
